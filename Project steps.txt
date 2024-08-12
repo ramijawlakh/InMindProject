@@ -1,1 +1,80 @@
 https://chatgpt.com/share/210c4e53-a816-4091-b145-b4c79e201a83
+
+
+
+
+
+prompt: I have the following assignment and I'm not sure how to get started, I need you to break it down into steps so I can get started with it. Keep in mind that I have access to YOLOv5 github
+ASSIGNMENT DESCRIPTION: 
+The dataset provided a collection of labeled images with labels: Forklift, Rack, Crate,
+Floor, Railing, Pallet, Stillage, iwhub and dolly using BMW JSON format. You are 
+requested to:
+1. Load the dataset and labels (Using PyTorch DataLoader)
+2. Write a function to visualize some of the labeled images (With bboxes)
+3. Check the possibility of augmenting the dataset (Albumentations)
+4. Split the Training dataset into train and validation.
+5. Train an object detection model based on YOLOv5 
+6. Evaluate the model on the Testing dataset and relaunch the training with 
+different hyperparameters.
+7. Train a custom semantic segmentation model using Pytorch (The model code 
+should be written by the student and available in the GitHub repository; the architecture can be inspired by an existing model, but this needs to be clearly 
+stated, bonus points if the model is directly inspired by a research paper)
+8. Evaluate the semantic segmentation model on the Testing dataset and relaunch 
+the training with different hyperparameters.
+9. Use Tensorboard to visualize the evolution of both models’ metrics during 
+training.
+10.Interpret the difference in results between the object detection models and the 
+semantic segmentation models separately (in terms of metrics: accuracy, iou,
+training time, inference speed, hyperparams, etc .) 
+
+
+
+
+Here's a step-by-step breakdown to get started with the assignment:
+
+1. Load the Dataset and Labels Using PyTorch DataLoader
+Understand the BMW JSON Format: First, explore the JSON files to understand how the annotations are structured (e.g., bounding boxes, class labels).
+Create a Custom Dataset Class: Implement a torch.utils.data.Dataset class that:
+Loads images from the directory.
+Parses the JSON files to extract bounding boxes and labels.
+Initialize DataLoader: Use torch.utils.data.DataLoader to create batches and shuffle the data.
+2. Visualize Labeled Images with Bounding Boxes
+Write a Visualization Function: Implement a function using libraries like matplotlib or opencv to:
+Load an image.
+Draw bounding boxes around objects using the coordinates from the JSON file.
+Display the image with labels.
+Test the Visualization: Run the function on a few images to ensure it works as expected.
+3. Augment the Dataset Using Albumentations
+Choose Augmentations: Select augmentations suitable for object detection (e.g., flipping, rotation, scaling, brightness adjustments).
+Integrate with Dataset Class: Modify your custom dataset class to apply these augmentations during data loading.
+Test the Augmentations: Visualize a few augmented images to ensure the transformations are correctly applied.
+4. Split the Dataset into Train and Validation Sets
+Create a Train-Validation Split: Use torch.utils.data.random_split or manual splitting to divide the dataset into training and validation subsets.
+Update DataLoaders: Create separate DataLoaders for the training and validation datasets.
+5. Train an Object Detection Model Based on YOLOv5
+Fork the YOLOv5 Repository: Clone the YOLOv5 GitHub repository and follow the setup instructions.
+Prepare the Dataset in YOLOv5 Format: Convert your dataset's labels and structure to match the format required by YOLOv5.
+Train the Model: Run the training script provided by YOLOv5, adjusting parameters such as batch size, learning rate, and number of epochs.
+Monitor Training: Keep track of metrics like loss, accuracy, and IoU using Tensorboard.
+6. Evaluate the Object Detection Model
+Run Evaluation: Use YOLOv5’s built-in evaluation scripts to assess the model's performance on the testing dataset.
+Hyperparameter Tuning: Experiment with different hyperparameters (e.g., learning rate, number of epochs) and retrain the model to improve performance.
+Document Findings: Keep notes on the impact of each hyperparameter change.
+7. Train a Custom Semantic Segmentation Model Using PyTorch
+Research an Existing Architecture: Find an existing semantic segmentation model (e.g., U-Net, DeepLabV3) to use as a reference.
+Implement the Model: Write the model architecture in PyTorch. You can customize it to fit your dataset and requirements.
+Prepare the Data: Ensure your dataset is properly formatted for segmentation tasks (e.g., pixel-wise labeling).
+Train the Model: Write a training loop for your model, keeping track of metrics like pixel accuracy and IoU.
+8. Evaluate the Semantic Segmentation Model
+Run Evaluation: Evaluate the model on the testing dataset and analyze metrics.
+Tuning and Retraining: Adjust the model's hyperparameters and retrain to improve results.
+Document the Process: Similar to the object detection model, keep notes on what changes were made and their effects.
+9. Use Tensorboard for Visualization
+Set Up Tensorboard: Integrate Tensorboard into your training scripts to log metrics, losses, and images.
+Track Metrics: Visualize the evolution of metrics during training for both models.
+10. Interpret the Results
+Compare Object Detection and Segmentation Models: Analyze the results of both models in terms of:
+Accuracy and IoU.
+Training time and inference speed.
+Impact of different hyperparameters.
+Write a Report: Summarize your findings, discuss the strengths and weaknesses of each approach, and explain the differences in performance.
