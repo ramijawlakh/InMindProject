@@ -126,4 +126,8 @@ yolo labels/
 raw data/
 labeled images/
 dataset/
+SegNet/labeled_images/
+SegNet/segmentation_labels/
+SegNet/segmentation_masks/
+
 
