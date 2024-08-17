@@ -129,5 +129,5 @@ dataset/
 SegNet/segmentation_images/
 SegNet/segmentation_labels/
 SegNet/segmentation_masks/
-
+SegNet/segnet_dataset/
 
