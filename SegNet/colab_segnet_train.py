@@ -4,7 +4,8 @@ from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from segnet_model import SegNet  # Assuming your SegNet model is in segnet_model.py
+from torch.utils.tensorboard import SummaryWriter  # Import TensorBoard
+from segnet_model import SegNet
 from segnet_utils import (
     load_checkpoint,
     save_checkpoint,
@@ -30,7 +31,11 @@ VAL_IMG_DIR = "/content/drive/MyDrive/segnet_dataset/Images/segnet_val/"
 VAL_MASK_DIR = "/content/drive/MyDrive/segnet_dataset/Masks/segnet_val/"
 VAL_LABEL_DIR = "/content/drive/MyDrive/segnet_dataset/Labels/segnet_val/"
 
-def train_fn(loader, model, optimizer, loss_fn, scaler):
+# TensorBoard setup
+LOG_DIR = "runs/segnet_experiment"  # Directory to save TensorBoard logs
+writer = SummaryWriter(LOG_DIR)
+
+def train_fn(loader, model, optimizer, loss_fn, scaler, epoch):
     loop = tqdm(loader)
 
     for batch_idx, (data, targets) in enumerate(loop):
@@ -50,6 +55,9 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
+
+        # Log loss to TensorBoard
+        writer.add_scalar("Loss/train", loss.item(), epoch * len(loader) + batch_idx)
 
 def main():
     train_transform = A.Compose(
@@ -107,7 +115,7 @@ def main():
     scaler = torch.cuda.amp.GradScaler()
 
     for epoch in range(NUM_EPOCHS):
-        train_fn(train_loader, model, optimizer, loss_fn, scaler)
+        train_fn(train_loader, model, optimizer, loss_fn, scaler, epoch)
 
         # save model
         checkpoint = {
@@ -116,13 +124,16 @@ def main():
         }
         save_checkpoint(checkpoint)
 
-        # check accuracy
-        check_accuracy(val_loader, model, device=DEVICE)
+        # check accuracy and log to TensorBoard
+        val_accuracy = check_accuracy(val_loader, model, device=DEVICE)
+        writer.add_scalar("Accuracy/val", val_accuracy, epoch)
 
         # print some examples to a folder
         save_predictions_as_imgs(
             val_loader, model, folder="saved_images/", device=DEVICE
         )
+    
+    writer.close()  # Close the TensorBoard writer
 
 if __name__ == "__main__":
     main()
