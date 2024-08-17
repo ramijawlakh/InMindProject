@@ -33,7 +33,7 @@ class SegNetDataset(Dataset):
         img_path = os.path.join(self.image_dir, img_name)
         mask_name = img_name.replace('rgb', 'semantic_segmentation')
         mask_path = os.path.join(self.mask_dir, mask_name)
-        label_name = mask_name.replace('.png', '.json')
+        label_name = mask_name.replace('semantic_segmentation_', 'semantic_segmentation_labels_').replace('.png', '.json')
         label_path = os.path.join(self.label_dir, label_name)
 
         # Load the image and mask
