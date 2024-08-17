@@ -3,9 +3,16 @@ import torchvision
 from segnet_dataset import SegNetDataset
 from torch.utils.data import DataLoader
 
-def save_checkpoint(state, filename="segnet_checkpoint.pth.tar"):
+#if saving weights on drive: 
+def save_checkpoint(state, filename="/content/drive/MyDrive/SegNet/segnet_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
+
+
+
+# if saving weights locally: def save_checkpoint(state, filename="segnet_checkpoint.pth.tar"):
+   # print("=> Saving checkpoint")
+    #torch.save(state, filename)
 
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
