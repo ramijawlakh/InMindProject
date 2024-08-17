@@ -13,7 +13,7 @@ Models:     https://github.com/ultralytics/yolov5/tree/master/models
 Datasets:   https://github.com/ultralytics/yolov5/tree/master/data
 Tutorial:   https://docs.ultralytics.com/yolov5/tutorials/train_custom_data
 """
-
+from torch.utils.tensorboard import SummaryWriter
 import argparse
 import math
 import os
@@ -99,6 +99,7 @@ RANK = int(os.getenv("RANK", -1))
 WORLD_SIZE = int(os.getenv("WORLD_SIZE", 1))
 GIT_INFO = check_git_info()
 
+from torch.utils.tensorboard import SummaryWriter
 
 def train(hyp, opt, device, callbacks):
     """
@@ -151,10 +152,20 @@ def train(hyp, opt, device, callbacks):
     )
     callbacks.run("on_pretrain_routine_start")
 
+
+
+
     # Directories
     w = save_dir / "weights"  # weights dir
     (w.parent if evolve else w).mkdir(parents=True, exist_ok=True)  # make dir
     last, best = w / "last.pt", w / "best.pt"
+
+
+
+ # Initialize TensorBoard writer
+    writer = SummaryWriter(log_dir=save_dir / "logs")
+
+
 
     # Hyperparameters
     if isinstance(hyp, str):
@@ -384,6 +395,9 @@ def train(hyp, opt, device, callbacks):
         if RANK in {-1, 0}:
             pbar = tqdm(pbar, total=nb, bar_format=TQDM_BAR_FORMAT)  # progress bar
         optimizer.zero_grad()
+
+       
+
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             callbacks.run("on_train_batch_start")
             ni = i + nb * epoch  # number integrated batches (since train start)
@@ -419,6 +433,14 @@ def train(hyp, opt, device, callbacks):
 
             # Backward
             scaler.scale(loss).backward()
+
+            writer.add_scalar('Loss/box', loss_items[0], ni)
+            writer.add_scalar('Loss/obj', loss_items[1], ni)
+            writer.add_scalar('Loss/cls', loss_items[2], ni)
+            writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], ni)
+
+
+
 
             # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
             if ni - last_opt_step >= accumulate:
@@ -475,7 +497,7 @@ def train(hyp, opt, device, callbacks):
                 best_fitness = fi
             log_vals = list(mloss) + list(results) + lr
             callbacks.run("on_fit_epoch_end", log_vals, epoch, best_fitness, fi)
-
+ 
             # Save model
             if (not nosave) or (final_epoch and not evolve):  # if save
                 ckpt = {
@@ -499,6 +521,8 @@ def train(hyp, opt, device, callbacks):
                 del ckpt
                 callbacks.run("on_model_save", last, epoch, final_epoch, best_fitness, fi)
 
+        
+
         # EarlyStopping
         if RANK != -1:  # if DDP training
             broadcast_list = [stop if RANK == 0 else None]
@@ -508,6 +532,13 @@ def train(hyp, opt, device, callbacks):
         if stop:
             break  # must break all DDP ranks
 
+
+
+ # **Log validation metrics after each epoch**
+    writer.add_scalar('mAP@0.5', results[2], epoch)
+    writer.add_scalar('mAP@0.5:0.95', results[3], epoch)
+    writer.add_scalar('Precision', results[0], epoch)
+    writer.add_scalar('Recall', results[1], epoch)
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training -----------------------------------------------------------------------------------------------------
     if RANK in {-1, 0}:
@@ -537,8 +568,15 @@ def train(hyp, opt, device, callbacks):
 
         callbacks.run("on_train_end", last, best, epoch, results)
 
+
+      # **Close TensorBoard writer**
+    writer.close()
+
     torch.cuda.empty_cache()
     return results
+
+
+
 
 
 def parse_opt(known=False):
