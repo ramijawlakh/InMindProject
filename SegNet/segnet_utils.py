@@ -105,16 +105,14 @@ def calculate_iou(preds, labels, num_classes):
 
     return iou / num_classes
 
-def save_predictions_as_imgs(
-    loader, model, folder="saved_images/", device="cuda"
-):
+def save_predictions_as_imgs(loader, model, folder="saved_images/", device="cuda"):
     model.eval()
     for idx, (x, y) in enumerate(loader):
-        x = x.to(device)
+        x = x.to(device=device)
         with torch.no_grad():
             preds = model(x)
-            preds = torch.argmax(preds, dim=1)
-        torchvision.utils.save_image(preds.unsqueeze(1).float(), f"{folder}/pred_{idx}.png")
-        torchvision.utils.save_image(y.unsqueeze(1).float(), f"{folder}/{idx}.png")
+            preds = torch.argmax(preds, dim=1).cpu().numpy()
+        # Save preds to an image file here
+
 
     model.train()
