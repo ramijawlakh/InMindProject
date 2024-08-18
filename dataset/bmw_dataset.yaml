@@ -1,12 +1,26 @@
 # dataset.yaml
 
 # Path to dataset
-path: C:\Inmind\PROJECT\dataset  # Base path where images and labels folders are located
+#path: C:\Inmind\PROJECT\dataset  # Base path where images and labels folders are located
 
 # Train/Val/Test sets as subdirectories
-train: images/train  # Relative to 'path', train images
-val: images/val      # Relative to 'path', validation images
-test: images/test    # Relative to 'path', optional, test images
+#train: images/train  # Relative to 'path', train images
+#val: images/val      # Relative to 'path', validation images
+#test: images/test    # Relative to 'path', optional, test images
+
+
+
+
+# Paths to the dataset within Google Drive
+path: /content/drive/MyDrive/dataset  # Root directory for your dataset
+train: images/train  # Train images relative to 'path'
+val: images/val  # Validation images relative to 'path'
+test: images/test  # Optional, if you have a separate test set
+
+
+
+
+
 
 # Number of classes
 nc: 9
