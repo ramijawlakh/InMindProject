@@ -33,13 +33,31 @@ class SegNetDataset(Dataset):
         mask_path = os.path.join(self.mask_dir, self.masks[idx])
         label_path = os.path.join(self.label_dir, self.labels[idx])
 
-        # Ensure only image files are loaded as images
-        image = np.array(Image.open(img_path).convert("RGB"))
-        mask = np.array(Image.open(mask_path))
+        # Debugging: Print the file paths being loaded
+        print(f"Loading image: {img_path}")
+        print(f"Loading mask: {mask_path}")
+        print(f"Loading label: {label_path}")
 
-        # Load the JSON label file
-        with open(label_path, 'r') as f:
-            label_data = json.load(f)
+        try:
+            # Ensure only image files are loaded as images
+            image = np.array(Image.open(img_path).convert("RGB"))
+        except Exception as e:
+            print(f"Error loading image: {img_path}, Error: {e}")
+            raise e
+        
+        try:
+            mask = np.array(Image.open(mask_path))
+        except Exception as e:
+            print(f"Error loading mask: {mask_path}, Error: {e}")
+            raise e
+
+        try:
+            # Load the JSON label file
+            with open(label_path, 'r') as f:
+                label_data = json.load(f)
+        except Exception as e:
+            print(f"Error loading label: {label_path}, Error: {e}")
+            raise e
 
         # Create a label array with the same size as the mask
         label_indices = np.zeros(mask.shape, dtype=np.uint8)
