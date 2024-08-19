@@ -1,139 +1,102 @@
 import torch
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+import argparse
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.tensorboard import SummaryWriter  # Import TensorBoard
-from segnet_model import SegNet
+from torch.utils.tensorboard import SummaryWriter
+
+from segnet_model import SegNet  # Import your SegNet model
+from segnet_dataset import create_dataloaders  # Import the data loader creation function
 from segnet_utils import (
     load_checkpoint,
     save_checkpoint,
-    get_loaders,
     check_accuracy,
     save_predictions_as_imgs,
 )
 
-# Hyperparameters etc.
-LEARNING_RATE = 1e-4
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 16
-NUM_EPOCHS = 10
-NUM_WORKERS = 2
-IMAGE_HEIGHT = 160  # 1280 originally
-IMAGE_WIDTH = 240  # 1918 originally
-PIN_MEMORY = True
-LOAD_MODEL = False
-TRAIN_IMG_DIR = "C:/Inmind/PROJECT/SegNet/segnet_dataset/Images/segnet_train/"
-TRAIN_MASK_DIR = "C:/Inmind/PROJECT/SegNet/segnet_dataset/Masks/segnet_train/"
-TRAIN_LABEL_DIR = "C:/Inmind/PROJECT/SegNet/segnet_dataset/Labels/segnet_train/"
-VAL_IMG_DIR = "C:/Inmind/PROJECT/SegNet/segnet_dataset/Images/segnet_val/"
-VAL_MASK_DIR = "C:/Inmind/PROJECT/SegNet/segnet_dataset/Masks/segnet_val/"
-VAL_LABEL_DIR = "C:/Inmind/PROJECT/SegNet/segnet_dataset/Labels/segnet_val/"
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train SegNet for Semantic Segmentation")
+    parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate for the optimizer")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
+    parser.add_argument("--num_epochs", type=int, default=20, help="Number of training epochs")
+    parser.add_argument("--image_height", type=int, default=720, help="Height of input images")
+    parser.add_argument("--image_width", type=int, default=1280, help="Width of input images")
+    parser.add_argument("--train_img_dir", type=str, required=True, help="Directory with training images")
+    parser.add_argument("--train_mask_dir", type=str, required=True, help="Directory with training masks")
+    parser.add_argument("--train_label_dir", type=str, required=True, help="Directory with training labels")
+    parser.add_argument("--val_img_dir", type=str, required=True, help="Directory with validation images")
+    parser.add_argument("--val_mask_dir", type=str, required=True, help="Directory with validation masks")
+    parser.add_argument("--val_label_dir", type=str, required=True, help="Directory with validation labels")
+    parser.add_argument("--label_map_file", type=str, required=True, help="Path to the label map JSON file")
+    parser.add_argument("--checkpoint_file", type=str, default="checkpoint.pth.tar", help="Path to save the model checkpoint")
+    parser.add_argument("--log_dir", type=str, default="runs", help="Directory for TensorBoard logs")
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use for training (cuda or cpu)")
+    return parser.parse_args()
 
-# TensorBoard setup
-LOG_DIR = "runs/segnet_experiment"  # Directory to save TensorBoard logs
-writer = SummaryWriter(LOG_DIR)
-
-def train_fn(loader, model, optimizer, loss_fn, scaler, epoch):
-    loop = tqdm(loader)
-
-    for batch_idx, (data, targets) in enumerate(loop):
-        data = data.to(device=DEVICE)
-        targets = targets.long().to(device=DEVICE)  # Assuming multiclass segmentation
+def train_fn(loader, model, optimizer, loss_fn, device):
+    model.train()
+    loop = tqdm(loader, leave=True)
+    for batch_idx, (data, targets, labels) in enumerate(loop):
+        data = data.to(device)
+        labels = labels.to(device)
 
         # forward
-        with torch.cuda.amp.autocast():
-            predictions = model(data)
-            loss = loss_fn(predictions, targets)
+        predictions = model(data)
+        loss = loss_fn(predictions, labels)
 
         # backward
         optimizer.zero_grad()
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        loss.backward()
+        optimizer.step()
 
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
 
-        # Log loss to TensorBoard
-        writer.add_scalar("Loss/train", loss.item(), epoch * len(loader) + batch_idx)
-
 def main():
-    train_transform = A.Compose(
-        [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
-            A.Rotate(limit=35, p=1.0),
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.1),
-            A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.1, rotate_limit=45, p=0.5),
-            A.GaussianBlur(p=0.1),
-            A.GaussNoise(p=0.1),
-            A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
-            ToTensorV2(),
-        ],
+    args = parse_args()
+
+    writer = SummaryWriter(log_dir=args.log_dir)
+
+    # Initialize model, loss function, optimizer
+    model = SegNet(in_channels=3, out_channels=9).to(args.device)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+
+    # Load checkpoint if available
+    if args.checkpoint_file:
+        load_checkpoint(torch.load(args.checkpoint_file), model)
+
+    # Create DataLoaders
+    train_loader, val_loader = create_dataloaders(
+        args.train_img_dir,
+        args.train_mask_dir,
+        args.train_label_dir,
+        args.label_map_file,
+        args.val_img_dir,
+        args.val_mask_dir,
+        args.val_label_dir,
+        batch_size=args.batch_size,
+        num_workers=4,
     )
 
-    val_transforms = A.Compose(
-        [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
-            A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
-            ToTensorV2(),
-        ],
-    )
+    for epoch in range(args.num_epochs):
+        train_fn(train_loader, model, optimizer, loss_fn, args.device)
 
-    model = SegNet(in_channels=3, out_channels=11).to(DEVICE)  # 11 classes as per your mapping
-    loss_fn = nn.CrossEntropyLoss()  # For multiclass segmentation
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+        # Check accuracy on validation set
+        val_acc = check_accuracy(val_loader, model, device=args.device)
+        print(f"Validation Accuracy after epoch {epoch+1}: {val_acc:.2f}%")
 
-    train_loader, val_loader = get_loaders(
-        TRAIN_IMG_DIR,
-        TRAIN_MASK_DIR,
-        TRAIN_LABEL_DIR,
-        VAL_IMG_DIR,
-        VAL_MASK_DIR,
-        VAL_LABEL_DIR,
-        BATCH_SIZE,
-        train_transform,
-        val_transforms,
-        NUM_WORKERS,
-        PIN_MEMORY,
-    )
-
-    if LOAD_MODEL:
-        load_checkpoint(torch.load("segnet_checkpoint.pth.tar"), model)
-
-    check_accuracy(val_loader, model, device=DEVICE)
-    scaler = torch.cuda.amp.GradScaler()
-
-    for epoch in range(NUM_EPOCHS):
-        train_fn(train_loader, model, optimizer, loss_fn, scaler, epoch)
-
-        # save model
+        # Save model checkpoint
         checkpoint = {
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        save_checkpoint(checkpoint)
+        save_checkpoint(checkpoint, filename=args.checkpoint_file)
 
-        # check accuracy and log to TensorBoard
-        val_accuracy = check_accuracy(val_loader, model, device=DEVICE)
-        writer.add_scalar("Accuracy/val", val_accuracy, epoch)
+        # Log to TensorBoard
+        writer.add_scalar("Validation Accuracy", val_acc, epoch)
 
-        # print some examples to a folder
-        save_predictions_as_imgs(
-            val_loader, model, folder="saved_images/", device=DEVICE
-        )
-    
-    writer.close()  # Close the TensorBoard writer
+    writer.close()
 
 if __name__ == "__main__":
     main()
