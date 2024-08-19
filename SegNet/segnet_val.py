@@ -8,6 +8,23 @@ from segnet_model import SegNet
 from segnet_dataset import create_dataloaders
 from segnet_utils import load_checkpoint, save_predictions_as_imgs
 
+
+import os
+
+# Define the dataset path in Google Drive
+DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
+
+# Update paths to your dataset in Google Drive
+TEST_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_test')
+TEST_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_test')
+TEST_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_test')
+LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
+
+# Path to load checkpoints and save evaluation results
+CHECKPOINT_FILE = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
+OUTPUT_DIR = '/content/drive/MyDrive/segnet_test_results'
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate SegNet on Testing Dataset")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for evaluation")

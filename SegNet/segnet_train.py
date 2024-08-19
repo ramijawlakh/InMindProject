@@ -4,6 +4,28 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+import os
+
+
+
+# Define the dataset path in Google Drive
+DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
+
+# Update paths to your dataset in Google Drive
+TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train')
+TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train')
+TRAIN_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_train')
+VAL_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_val')
+VAL_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_val')
+VAL_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_val')
+LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
+
+# Path to save checkpoints and TensorBoard logs
+CHECKPOINT_FILE = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
+LOG_DIR = '/content/drive/MyDrive/segnet_tensorboard_logs'
+
+
+
 
 from segnet_model import SegNet  # Import your SegNet model
 from segnet_dataset import create_dataloaders  # Import the data loader creation function
