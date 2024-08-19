@@ -22,7 +22,12 @@ LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
 
 # Path to save checkpoints and TensorBoard logs
 CHECKPOINT_FILE = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
+
 LOG_DIR = '/content/drive/MyDrive/segnet_tensorboard_logs'
+
+# Create the directory if it doesn't exist
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
 
 
 
