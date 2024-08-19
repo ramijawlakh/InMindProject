@@ -83,6 +83,11 @@ def main():
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
+    # Ensure checkpoint directory exists
+    checkpoint_dir = os.path.dirname(args.checkpoint_file)
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
     # Load checkpoint if available
     if os.path.exists(args.checkpoint_file):
         load_checkpoint(torch.load(args.checkpoint_file), model, optimizer)
@@ -109,11 +114,6 @@ def main():
         # Check accuracy on validation set
         val_acc = check_accuracy(val_loader, model, device=args.device)
         print(f"Validation Accuracy after epoch {epoch+1}: {val_acc:.2f}%")
-
-        # Ensure checkpoint directory exists
-        checkpoint_dir = os.path.dirname(args.checkpoint_file)
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir)
 
         # Save model checkpoint
         checkpoint = {
