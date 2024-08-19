@@ -23,7 +23,7 @@ class SegNetDataset(Dataset):
             self.label_map = json.load(f)
 
         # Convert label map RGBA keys to tuples and map to indices
-        self.class_map = {tuple(map(int, key.strip("()").split(", "))): idx for idx, key in enumerate(self.label_map.keys())}
+        self.class_map = {tuple(map(int, key.strip("()").split(", "))): idx for key, idx in self.label_map.items()}
 
     def __len__(self):
         return len(self.images)
@@ -35,12 +35,20 @@ class SegNetDataset(Dataset):
 
         image = np.array(Image.open(img_path).convert("RGB"))
         mask = np.array(Image.open(mask_path))
-        label = np.array(Image.open(label_path).convert("RGBA"))  # Load label as RGBA
 
-        # Convert RGBA to class indices
-        label_indices = np.zeros(label.shape[:2], dtype=np.uint8)
-        for rgba, class_idx in self.class_map.items():
-            label_indices[(label == rgba).all(axis=-1)] = class_idx
+        # Load the JSON label file
+        with open(label_path, 'r') as f:
+            label_data = json.load(f)
+
+        # Create a label array with the same size as the image
+        label_indices = np.zeros(mask.shape, dtype=np.uint8)
+
+        # Convert JSON label data to class indices
+        for rgba_str, class_info in label_data.items():
+            rgba_tuple = tuple(map(int, rgba_str.strip("()").split(", ")))
+            class_idx = self.class_map[rgba_tuple]
+            # Assuming you have a way to create a binary mask from the RGBA tuple in the label
+            label_indices[mask == rgba_tuple] = class_idx
 
         if self.transform:
             augmented = self.transform(image=image, mask=mask, label=label_indices)
@@ -48,7 +56,7 @@ class SegNetDataset(Dataset):
             mask = augmented['mask']
             label = augmented['label']
 
-        return image, mask, label
+        return image, mask, label_indices
 
 def get_train_transform():
     return A.Compose([
