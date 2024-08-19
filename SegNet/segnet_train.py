@@ -110,6 +110,11 @@ def main():
         val_acc = check_accuracy(val_loader, model, device=args.device)
         print(f"Validation Accuracy after epoch {epoch+1}: {val_acc:.2f}%")
 
+        # Ensure checkpoint directory exists
+        checkpoint_dir = os.path.dirname(args.checkpoint_file)
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+
         # Save model checkpoint
         checkpoint = {
             "state_dict": model.state_dict(),
