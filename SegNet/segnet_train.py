@@ -6,8 +6,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-
-
 # Define the dataset path in Google Drive
 DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
 
@@ -22,15 +20,11 @@ LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
 
 # Path to save checkpoints and TensorBoard logs
 CHECKPOINT_FILE = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
-
 LOG_DIR = '/content/drive/MyDrive/segnet_tensorboard_logs'
 
 # Create the directory if it doesn't exist
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
-
-
-
 
 from segnet_model import SegNet  # Import your SegNet model
 from segnet_dataset import create_dataloaders  # Import the data loader creation function
@@ -90,8 +84,11 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # Load checkpoint if available
-    if args.checkpoint_file:
-        load_checkpoint(torch.load(args.checkpoint_file), model)
+    if os.path.exists(args.checkpoint_file):
+        load_checkpoint(torch.load(args.checkpoint_file), model, optimizer)
+        print(f"Checkpoint loaded from {args.checkpoint_file}.")
+    else:
+        print(f"No checkpoint found at {args.checkpoint_file}. Starting training from scratch.")
 
     # Create DataLoaders
     train_loader, val_loader = create_dataloaders(
