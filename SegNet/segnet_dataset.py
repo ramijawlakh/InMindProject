@@ -2,7 +2,7 @@ import os
 import json
 import torch
 from torch.utils.data import Dataset
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 import numpy as np
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -14,7 +14,6 @@ class SegNetDataset(Dataset):
         self.label_dir = label_dir
         self.transform = transform
 
-        # Only load valid image files and JSON label files
         self.images = sorted([f for f in os.listdir(image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
         self.masks = sorted([f for f in os.listdir(mask_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
         self.labels = sorted([f for f in os.listdir(label_dir) if f.endswith('.json')])
@@ -34,43 +33,46 @@ class SegNetDataset(Dataset):
         mask_path = os.path.join(self.mask_dir, self.masks[idx])
         label_path = os.path.join(self.label_dir, self.labels[idx])
 
+        # Debugging: Print the file paths being loaded
+        print(f"Loading image: {img_path}")
+        print(f"Loading mask: {mask_path}")
+        print(f"Loading label: {label_path}")
+
         try:
-            # Load the image
-            image = Image.open(img_path).convert("RGB")
-        except UnidentifiedImageError as e:
-            print(f"Error loading image {img_path}: {e}")
+            # Ensure only image files are loaded as images
+            image = np.array(Image.open(img_path).convert("RGB"))
+        except Exception as e:
+            print(f"Error loading image: {img_path}, Error: {e}")
+            raise e
+        
+        try:
+            mask = np.array(Image.open(mask_path))
+        except Exception as e:
+            print(f"Error loading mask: {mask_path}, Error: {e}")
             raise e
 
         try:
-            # Load the mask
-            mask = Image.open(mask_path)
-        except UnidentifiedImageError as e:
-            print(f"Error loading mask {mask_path}: {e}")
-            raise e
-
-        try:
-            # Load the JSON label
+            # Load the JSON label file
             with open(label_path, 'r') as f:
                 label_data = json.load(f)
-        except json.JSONDecodeError as e:
-            print(f"Error loading label {label_path}: {e}")
+        except Exception as e:
+            print(f"Error loading label: {label_path}, Error: {e}")
             raise e
 
-        # Initialize label indices array
-        label_indices = np.zeros(mask.size, dtype=np.uint8)
+        # Create a label array with the same size as the mask
+        label_indices = np.zeros(mask.shape, dtype=np.uint8)
 
-        # Populate label indices based on JSON data
+        # Convert JSON label data to class indices
         for rgba_str, class_info in label_data.items():
             rgba_tuple = tuple(map(int, rgba_str.strip("()").split(", ")))
-            class_idx = self.class_map.get(rgba_tuple, 0)
-            label_indices[(mask == rgba_tuple).all(axis=-1)] = class_idx
+            class_idx = self.class_map[rgba_tuple]
+            label_indices[mask == rgba_tuple] = class_idx
 
-        # Apply transformations
         if self.transform:
-            augmented = self.transform(image=np.array(image), mask=np.array(mask), label=label_indices)
+            augmented = self.transform(image=image, mask=mask, label=label_indices)
             image = augmented['image']
             mask = augmented['mask']
-            label_indices = augmented['label']
+            label = augmented['label']
 
         return image, mask, label_indices
 
