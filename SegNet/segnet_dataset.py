@@ -39,13 +39,14 @@ class SegNetDataset(Dataset):
         print(f"Loading label: {label_path}")
 
         try:
-            # Ensure only image files are loaded as images
+            # Load image
             image = np.array(Image.open(img_path).convert("RGB"))
         except Exception as e:
             print(f"Error loading image: {img_path}, Error: {e}")
             raise e
-        
+
         try:
+            # Load mask
             mask = np.array(Image.open(mask_path))
         except Exception as e:
             print(f"Error loading mask: {mask_path}, Error: {e}")
@@ -65,7 +66,7 @@ class SegNetDataset(Dataset):
         # Convert JSON label data to class indices
         for rgba_str, class_info in label_data.items():
             rgba_tuple = tuple(map(int, rgba_str.strip("()").split(", ")))
-            class_idx = self.class_map[rgba_tuple]
+            class_idx = self.class_map.get(rgba_tuple, 0)  # default to 0 (background) if not found
             label_indices[mask == rgba_tuple] = class_idx
 
         if self.transform:
