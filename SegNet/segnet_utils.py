@@ -1,118 +1,63 @@
 import torch
-import torchvision
-from segnet_dataset import SegNetDataset
-from torch.utils.data import DataLoader
+import os
+from torchvision.utils import save_image
 
-#if saving weights on drive: 
-def save_checkpoint(state, filename="/content/drive/MyDrive/SegNet/segnet_checkpoint.pth.tar"):
+def save_checkpoint(state, filename="checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
-
-
-
-# if saving weights locally: def save_checkpoint(state, filename="segnet_checkpoint.pth.tar"):
-   # print("=> Saving checkpoint")
-    #torch.save(state, filename)
 
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
-def get_loaders(
-    train_dir,
-    train_maskdir,
-    train_labeldir,
-    val_dir,
-    val_maskdir,
-    val_labeldir,
-    batch_size,
-    train_transform,
-    val_transform,
-    num_workers=4,
-    pin_memory=True,
-):
-    train_ds = SegNetDataset(
-        image_dir=train_dir,
-        mask_dir=train_maskdir,
-        label_dir=train_labeldir,
-        transform=train_transform,
-    )
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        shuffle=True,
-    )
-
-    val_ds = SegNetDataset(
-        image_dir=val_dir,
-        mask_dir=val_maskdir,
-        label_dir=val_labeldir,
-        transform=val_transform,
-    )
-
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        shuffle=False,
-    )
-
-    return train_loader, val_loader
-
-def check_accuracy(loader, model, device="cuda"):
+def check_accuracy(loader, model, device="cuda", num_classes=9):
     model.eval()
-    num_correct = 0
-    num_pixels = 0
-    iou_score = 0
-    num_classes = len(loader.dataset.class_mapping)
+    correct_pixels = 0
+    total_pixels = 0
+    class_correct = [0] * num_classes
+    class_total = [0] * num_classes
+    dice_score = 0
 
     with torch.no_grad():
-        for x, y in loader:
-            x = x.to(device)
-            y = y.to(device)
+        for data, masks, labels in loader:
+            data = data.to(device)
+            labels = labels.to(device)
 
-            preds = model(x)
-            preds = torch.argmax(preds, dim=1)
+            outputs = model(data)
+            preds = torch.argmax(outputs, dim=1)
 
-            num_correct += (preds == y).sum().item()
-            num_pixels += torch.numel(preds)
-            iou_score += calculate_iou(preds, y, num_classes)
+            correct_pixels += (preds == labels).sum().item()
+            total_pixels += torch.numel(preds)
 
-    print(
-        f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100:.2f}"
-    )
-    print(f"IoU score: {iou_score/len(loader):.4f}")
+            for i in range(num_classes):
+                class_correct[i] += ((preds == i) & (labels == i)).sum().item()
+                class_total[i] += (labels == i).sum().item()
+
+            dice_score += (2 * (preds * labels).sum()) / ((preds + labels).sum() + 1e-8)
+
+    overall_accuracy = correct_pixels / total_pixels * 100
+    class_accuracy = [100 * (c / t) if t != 0 else 0 for c, t in zip(class_correct, class_total)]
+    mean_dice_score = dice_score / len(loader)
+
+    print(f"Overall Accuracy: {overall_accuracy:.2f}%")
+    for i, acc in enumerate(class_accuracy):
+        print(f"Class {i} Accuracy: {acc:.2f}%")
+    print(f"Mean Dice Score: {mean_dice_score:.4f}")
+
     model.train()
-
-def calculate_iou(preds, labels, num_classes):
-    iou = 0
-    preds = preds.view(-1)
-    labels = labels.view(-1)
-
-    for cls in range(num_classes):
-        pred_inds = (preds == cls)
-        label_inds = (labels == cls)
-        intersection = (pred_inds & label_inds).sum().item()
-        union = (pred_inds | label_inds).sum().item()
-        if union == 0:
-            iou += 0
-        else:
-            iou += intersection / union
-
-    return iou / num_classes
+    return overall_accuracy
 
 def save_predictions_as_imgs(loader, model, folder="saved_images/", device="cuda"):
     model.eval()
-    for idx, (x, y) in enumerate(loader):
-        x = x.to(device=device)
-        with torch.no_grad():
-            preds = model(x)
-            preds = torch.argmax(preds, dim=1).cpu().numpy()
-        # Save preds to an image file here
+    os.makedirs(folder, exist_ok=True)
 
+    with torch.no_grad():
+        for idx, (data, masks, labels) in enumerate(loader):
+            data = data.to(device)
+            preds = model(data)
+            preds = torch.argmax(preds, dim=1).unsqueeze(1)
+
+            save_image(preds, os.path.join(folder, f"pred_{idx}.png"))
 
     model.train()
+

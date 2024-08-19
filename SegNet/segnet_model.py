@@ -3,136 +3,133 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class SegNet(nn.Module):
-
-    def __init__(self, in_chn=3, out_chn=11, BN_momentum=0.5):
+    def __init__(self, in_channels=3, out_channels=9):
         super(SegNet, self).__init__()
 
-        self.in_chn = in_chn
-        self.out_chn = out_chn
+        # Encoder: VGG16-like layers
+        self.encoder = nn.Sequential(
+            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True),  # 1/2
 
-        # Encoding layers
-        self.MaxEn = nn.MaxPool2d(2, stride=2, return_indices=True)
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True),  # 1/4
 
-        self.ConvEn11 = nn.Conv2d(self.in_chn, 64, kernel_size=3, padding=1)
-        self.BNEn11 = nn.BatchNorm2d(64, momentum=BN_momentum)
-        self.ConvEn12 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.BNEn12 = nn.BatchNorm2d(64, momentum=BN_momentum)
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True),  # 1/8
 
-        self.ConvEn21 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.BNEn21 = nn.BatchNorm2d(128, momentum=BN_momentum)
-        self.ConvEn22 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
-        self.BNEn22 = nn.BatchNorm2d(128, momentum=BN_momentum)
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True),  # 1/16
 
-        self.ConvEn31 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-        self.BNEn31 = nn.BatchNorm2d(256, momentum=BN_momentum)
-        self.ConvEn32 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.BNEn32 = nn.BatchNorm2d(256, momentum=BN_momentum)
-        self.ConvEn33 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.BNEn33 = nn.BatchNorm2d(256, momentum=BN_momentum)
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, return_indices=True)  # 1/32
+        )
 
-        self.ConvEn41 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-        self.BNEn41 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvEn42 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNEn42 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvEn43 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNEn43 = nn.BatchNorm2d(512, momentum=BN_momentum)
+        # Decoder: Upsampling with the corresponding indices and convolution
+        self.decoder = nn.Sequential(
+            nn.MaxUnpool2d(kernel_size=2, stride=2),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
 
-        self.ConvEn51 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNEn51 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvEn52 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNEn52 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvEn53 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNEn53 = nn.BatchNorm2d(512, momentum=BN_momentum)
+            nn.MaxUnpool2d(kernel_size=2, stride=2),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
 
-        # Decoding layers
-        self.MaxDe = nn.MaxUnpool2d(2, stride=2)
+            nn.MaxUnpool2d(kernel_size=2, stride=2),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
 
-        self.ConvDe53 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNDe53 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvDe52 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNDe52 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvDe51 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNDe51 = nn.BatchNorm2d(512, momentum=BN_momentum)
+            nn.MaxUnpool2d(kernel_size=2, stride=2),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
 
-        self.ConvDe43 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNDe43 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvDe42 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.BNDe42 = nn.BatchNorm2d(512, momentum=BN_momentum)
-        self.ConvDe41 = nn.Conv2d(512, 256, kernel_size=3, padding=1)
-        self.BNDe41 = nn.BatchNorm2d(256, momentum=BN_momentum)
-
-        self.ConvDe33 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.BNDe33 = nn.BatchNorm2d(256, momentum=BN_momentum)
-        self.ConvDe32 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.BNDe32 = nn.BatchNorm2d(256, momentum=BN_momentum)
-        self.ConvDe31 = nn.Conv2d(256, 128, kernel_size=3, padding=1)
-        self.BNDe31 = nn.BatchNorm2d(128, momentum=BN_momentum)
-
-        self.ConvDe22 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
-        self.BNDe22 = nn.BatchNorm2d(128, momentum=BN_momentum)
-        self.ConvDe21 = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        self.BNDe21 = nn.BatchNorm2d(64, momentum=BN_momentum)
-
-        self.ConvDe12 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.BNDe12 = nn.BatchNorm2d(64, momentum=BN_momentum)
-        self.ConvDe11 = nn.Conv2d(64, self.out_chn, kernel_size=3, padding=1)
-        self.BNDe11 = nn.BatchNorm2d(self.out_chn, momentum=BN_momentum)
+            nn.MaxUnpool2d(kernel_size=2, stride=2),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, out_channels, kernel_size=3, padding=1)
+        )
 
     def forward(self, x):
-
-        # Encode layers
-        x = F.relu(self.BNEn11(self.ConvEn11(x))) 
-        x = F.relu(self.BNEn12(self.ConvEn12(x))) 
-        x, ind1 = self.MaxEn(x)
-        size1 = x.size()
-
-        x = F.relu(self.BNEn21(self.ConvEn21(x))) 
-        x = F.relu(self.BNEn22(self.ConvEn22(x))) 
-        x, ind2 = self.MaxEn(x)
-        size2 = x.size()
-
-        x = F.relu(self.BNEn31(self.ConvEn31(x))) 
-        x = F.relu(self.BNEn32(self.ConvEn32(x))) 
-        x = F.relu(self.BNEn33(self.ConvEn33(x)))   
-        x, ind3 = self.MaxEn(x)
-        size3 = x.size()
-
-        x = F.relu(self.BNEn41(self.ConvEn41(x))) 
-        x = F.relu(self.BNEn42(self.ConvEn42(x))) 
-        x = F.relu(self.BNEn43(self.ConvEn43(x)))   
-        x, ind4 = self.MaxEn(x)
-        size4 = x.size()
-
-        x = F.relu(self.BNEn51(self.ConvEn51(x))) 
-        x = F.relu(self.BNEn52(self.ConvEn52(x))) 
-        x = F.relu(self.BNEn53(self.ConvEn53(x)))   
-        x, ind5 = self.MaxEn(x)
-        size5 = x.size()
-
-        # Decode layers
-        x = self.MaxDe(x, ind5, output_size=size5)
-        x = F.relu(self.BNDe53(self.ConvDe53(x)))
-        x = F.relu(self.BNDe52(self.ConvDe52(x)))
-        x = F.relu(self.BNDe51(self.ConvDe51(x)))
-
-        x = self.MaxDe(x, ind4, output_size=size4)
-        x = F.relu(self.BNDe43(self.ConvDe43(x)))
-        x = F.relu(self.BNDe42(self.ConvDe42(x)))
-        x = F.relu(self.BNDe41(self.ConvDe41(x)))
-
-        x = self.MaxDe(x, ind3, output_size=size3)
-        x = F.relu(self.BNDe33(self.ConvDe33(x)))
-        x = F.relu(self.BNDe32(self.ConvDe32(x)))
-        x = F.relu(self.BNDe31(self.ConvDe31(x)))
-
-        x = self.MaxDe(x, ind2, output_size=size2)
-        x = F.relu(self.BNDe22(self.ConvDe22(x)))
-        x = F.relu(self.BNDe21(self.ConvDe21(x)))
-
-        x = self.MaxDe(x, ind1, output_size=size1)
-        x = F.relu(self.BNDe12(self.ConvDe12(x)))
-        x = self.ConvDe11(x)
-
-        x = F.softmax(x, dim=1)
-
+        indices_list = []
+        size_list = []
+        
+        for layer in self.encoder:
+            if isinstance(layer, nn.MaxPool2d):
+                x, indices = layer(x)
+                indices_list.append(indices)
+                size_list.append(x.size())
+            else:
+                x = layer(x)
+        
+        for i, layer in enumerate(self.decoder):
+            if isinstance(layer, nn.MaxUnpool2d):
+                x = layer(x, indices_list.pop(), output_size=size_list.pop())
+            else:
+                x = layer(x)
+                
         return x
+
+if __name__ == "__main__":
+    model = SegNet(in_channels=3, out_channels=9)
+    x = torch.randn((1, 3, 128, 128))  # Batch size 1, 3 channels (RGB), 128x128 image size
+    preds = model(x)
+    print(preds.shape)  # Should output torch.Size([1, 9, 128, 128])
