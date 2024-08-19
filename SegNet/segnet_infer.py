@@ -7,11 +7,21 @@ from PIL import Image
 import numpy as np
 import cv2
 
+
+import os
+
+# Define the dataset path in Google Drive
+DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
+
+# Define the paths for input image and output directory in Google Drive
+IMAGE_PATH = os.path.join(DATASET_PATH, 'some_test_image.jpg')
+OUTPUT_PATH = '/content/drive/MyDrive/segnet_inference_output/predicted_mask.png'
+
 # Hyperparameters
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 IMAGE_HEIGHT = 720  # Same as training height
 IMAGE_WIDTH = 1280  # Same as training width
-CHECKPOINT_PATH = "checkpoint.pth.tar"
+CHECKPOINT_PATH = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
 
 def transform_image(image_path):
     transform = A.Compose([
