@@ -14,9 +14,9 @@ class SegNetDataset(Dataset):
         self.label_dir = label_dir
         self.transform = transform
 
-        self.images = sorted(os.listdir(image_dir))
-        self.masks = sorted(os.listdir(mask_dir))
-        self.labels = sorted(os.listdir(label_dir))
+        self.images = sorted([f for f in os.listdir(image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
+        self.masks = sorted([f for f in os.listdir(mask_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
+        self.labels = sorted([f for f in os.listdir(label_dir) if f.endswith('.json')])
         
         # Load the label map from JSON
         with open(label_map_file, 'r') as f:
@@ -33,6 +33,7 @@ class SegNetDataset(Dataset):
         mask_path = os.path.join(self.mask_dir, self.masks[idx])
         label_path = os.path.join(self.label_dir, self.labels[idx])
 
+        # Ensure only image files are loaded as images
         image = np.array(Image.open(img_path).convert("RGB"))
         mask = np.array(Image.open(mask_path))
 
@@ -40,14 +41,13 @@ class SegNetDataset(Dataset):
         with open(label_path, 'r') as f:
             label_data = json.load(f)
 
-        # Create a label array with the same size as the image
+        # Create a label array with the same size as the mask
         label_indices = np.zeros(mask.shape, dtype=np.uint8)
 
         # Convert JSON label data to class indices
         for rgba_str, class_info in label_data.items():
             rgba_tuple = tuple(map(int, rgba_str.strip("()").split(", ")))
             class_idx = self.class_map[rgba_tuple]
-            # Assuming you have a way to create a binary mask from the RGBA tuple in the label
             label_indices[mask == rgba_tuple] = class_idx
 
         if self.transform:
