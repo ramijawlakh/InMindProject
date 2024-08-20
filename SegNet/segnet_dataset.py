@@ -78,7 +78,7 @@ class SegNetDataset(Dataset):
 
 def get_train_transform():
     return A.Compose([
-        A.Resize(height=720, width=1280),  # Ensure all images are 720x1280
+        A.Resize(height=704, width=1280),  # Adjusted to be divisible by 32
         A.HorizontalFlip(p=0.5),
         A.RandomRotate90(p=0.5),
         A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
@@ -89,6 +89,11 @@ def get_train_transform():
     ])
 
 def get_val_transform():
+    return A.Compose([
+        A.Resize(height=704, width=1280),  # Adjusted to be divisible by 32
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        ToTensorV2()
+    ])
     return A.Compose([
         A.Resize(height=720, width=1280),  # Ensure all images are 720x1280
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
