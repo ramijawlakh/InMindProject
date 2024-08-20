@@ -33,44 +33,36 @@ class SegNetDataset(Dataset):
         mask_path = os.path.join(self.mask_dir, self.masks[idx])
         label_path = os.path.join(self.label_dir, self.labels[idx])
 
-        # Debugging: Print the file paths being loaded
         print(f"Loading image: {img_path}")
         print(f"Loading mask: {mask_path}")
         print(f"Loading label: {label_path}")
 
         try:
-            # Load image
             image = np.array(Image.open(img_path).convert("RGB"))
-            # Print image shape for debugging
             print(f"Original image shape: {image.shape}")
         except Exception as e:
             print(f"Error loading image: {img_path}, Error: {e}")
             raise e
 
         try:
-            # Load mask
             mask = np.array(Image.open(mask_path))
-            # Print mask shape for debugging
             print(f"Original mask shape: {mask.shape}")
         except Exception as e:
             print(f"Error loading mask: {mask_path}, Error: {e}")
             raise e
 
         try:
-            # Load the JSON label file
             with open(label_path, 'r') as f:
                 label_data = json.load(f)
         except Exception as e:
             print(f"Error loading label: {label_path}, Error: {e}")
             raise e
 
-        # Create a label array with the same size as the mask
         label_indices = np.zeros(mask.shape, dtype=np.uint8)
 
-        # Convert JSON label data to class indices
         for rgba_str, class_info in label_data.items():
             rgba_tuple = tuple(map(int, rgba_str.strip("()").split(", ")))
-            class_idx = self.class_map.get(rgba_tuple, 0)  # default to 0 (background) if not found
+            class_idx = self.class_map.get(rgba_tuple, 0)
             label_indices[mask == rgba_tuple] = class_idx
 
         if self.transform:
@@ -78,7 +70,6 @@ class SegNetDataset(Dataset):
             image = augmented['image']
             mask = augmented['mask']
 
-            # Debugging: Print the transformed shapes
             print(f"Transformed image shape: {image.shape}")
             print(f"Transformed mask shape: {mask.shape}")
 
@@ -86,7 +77,7 @@ class SegNetDataset(Dataset):
 
 def get_train_transform():
     return A.Compose([
-        A.Resize(height=704, width=1280),  # Ensure all images are resized correctly
+        A.Resize(height=720, width=1280),  # Consistent resize to 720x1280
         A.HorizontalFlip(p=0.5),
         A.RandomRotate90(p=0.5),
         A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
@@ -98,7 +89,7 @@ def get_train_transform():
 
 def get_val_transform():
     return A.Compose([
-        A.Resize(height=704, width=1280),  # Ensure all images are resized correctly
+        A.Resize(height=720, width=1280),  # Consistent resize to 720x1280
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         ToTensorV2()
     ])
