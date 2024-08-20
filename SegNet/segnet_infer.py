@@ -6,22 +6,20 @@ from segnet_utils import load_checkpoint
 from PIL import Image
 import numpy as np
 import cv2
-
-
 import os
 
-# Define the dataset path in Google Drive
-DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
+# Define the dataset path in your local machine
+DATASET_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_dataset'
 
-# Define the paths for input image and output directory in Google Drive
+# Define the paths for input image and output directory in your local machine
 IMAGE_PATH = os.path.join(DATASET_PATH, 'some_test_image.jpg')
-OUTPUT_PATH = '/content/drive/MyDrive/segnet_inference_output/predicted_mask.png'
+OUTPUT_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_inference_output\predicted_mask.png'
 
 # Hyperparameters
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = "cpu"  # Set to CPU for local execution
 IMAGE_HEIGHT = 720  # Same as training height
 IMAGE_WIDTH = 1280  # Same as training width
-CHECKPOINT_PATH = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
+CHECKPOINT_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_model_checkpoint.pth.tar'
 
 def transform_image(image_path):
     transform = A.Compose([
@@ -57,7 +55,7 @@ def main(image_path, output_path):
     save_prediction(prediction, output_path)
 
 if __name__ == "__main__":
-    image_path = "test_image.jpeg"  # Replace with your image path
-    output_path = "segmentation_mask.png"  # Replace with desired output path
+    image_path = r'C:\Inmind\PROJECT\SegNet\some_test_image.jpg'  # Replace with your image path
+    output_path = r'C:\Inmind\PROJECT\SegNet\segmentation_mask.png'  # Replace with desired output path
     main(image_path, output_path)
     print(f"Prediction saved to {output_path}")
