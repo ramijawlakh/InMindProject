@@ -70,10 +70,9 @@ class SegNetDataset(Dataset):
             label_indices[mask == rgba_tuple] = class_idx
 
         if self.transform:
-            augmented = self.transform(image=image, mask=mask, label=label_indices)
+            augmented = self.transform(image=image, mask=mask)
             image = augmented['image']
             mask = augmented['mask']
-            label = augmented['label']
 
         return image, mask, label_indices
 
