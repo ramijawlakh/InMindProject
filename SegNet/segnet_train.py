@@ -6,10 +6,10 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-# Define the dataset path in Google Drive
-DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
+# Define the dataset path in your local machine
+DATASET_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_dataset'
 
-# Update paths to your dataset in Google Drive
+# Update paths to your dataset in your local directory
 TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train')
 TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train')
 TRAIN_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_train')
@@ -19,8 +19,8 @@ VAL_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_val')
 LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
 
 # Path to save checkpoints and TensorBoard logs
-CHECKPOINT_FILE = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
-LOG_DIR = '/content/drive/MyDrive/segnet_tensorboard_logs'
+CHECKPOINT_FILE = r'C:\Inmind\PROJECT\SegNet\segnet_model_checkpoint.pth.tar'
+LOG_DIR = r'C:\Inmind\PROJECT\SegNet\segnet_tensorboard_logs'
 
 # Create the directory if it doesn't exist
 if not os.path.exists(LOG_DIR):
@@ -42,16 +42,16 @@ def parse_args():
     parser.add_argument("--num_epochs", type=int, default=20, help="Number of training epochs")
     parser.add_argument("--image_height", type=int, default=720, help="Height of input images")
     parser.add_argument("--image_width", type=int, default=1280, help="Width of input images")
-    parser.add_argument("--train_img_dir", type=str, required=True, help="Directory with training images")
-    parser.add_argument("--train_mask_dir", type=str, required=True, help="Directory with training masks")
-    parser.add_argument("--train_label_dir", type=str, required=True, help="Directory with training labels")
-    parser.add_argument("--val_img_dir", type=str, required=True, help="Directory with validation images")
-    parser.add_argument("--val_mask_dir", type=str, required=True, help="Directory with validation masks")
-    parser.add_argument("--val_label_dir", type=str, required=True, help="Directory with validation labels")
-    parser.add_argument("--label_map_file", type=str, required=True, help="Path to the label map JSON file")
-    parser.add_argument("--checkpoint_file", type=str, default="checkpoint.pth.tar", help="Path to save the model checkpoint")
-    parser.add_argument("--log_dir", type=str, default="runs", help="Directory for TensorBoard logs")
-    parser.add_argument("--device", type=str, default="cuda", help="Device to use for training (cuda or cpu)")
+    parser.add_argument("--train_img_dir", type=str, default=TRAIN_IMG_DIR, help="Directory with training images")
+    parser.add_argument("--train_mask_dir", type=str, default=TRAIN_MASK_DIR, help="Directory with training masks")
+    parser.add_argument("--train_label_dir", type=str, default=TRAIN_LABEL_DIR, help="Directory with training labels")
+    parser.add_argument("--val_img_dir", type=str, default=VAL_IMG_DIR, help="Directory with validation images")
+    parser.add_argument("--val_mask_dir", type=str, default=VAL_MASK_DIR, help="Directory with validation masks")
+    parser.add_argument("--val_label_dir", type=str, default=VAL_LABEL_DIR, help="Directory with validation labels")
+    parser.add_argument("--label_map_file", type=str, default=LABEL_MAP_FILE, help="Path to the label map JSON file")
+    parser.add_argument("--checkpoint_file", type=str, default=CHECKPOINT_FILE, help="Path to save the model checkpoint")
+    parser.add_argument("--log_dir", type=str, default=LOG_DIR, help="Directory for TensorBoard logs")
+    parser.add_argument("--device", type=str, default="cpu", help="Device to use for training (cuda or cpu)")
     return parser.parse_args()
 
 def train_fn(loader, model, optimizer, loss_fn, device):
@@ -90,7 +90,7 @@ def main():
 
     # Load checkpoint if available
     if os.path.exists(args.checkpoint_file):
-        load_checkpoint(torch.load(args.checkpoint_file), model, optimizer)
+        load_checkpoint(torch.load(args.checkpoint_file), model, optimizer, device=args.device)
         print(f"Checkpoint loaded from {args.checkpoint_file}.")
     else:
         print(f"No checkpoint found at {args.checkpoint_file}. Starting training from scratch.")

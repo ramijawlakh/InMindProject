@@ -8,35 +8,31 @@ from segnet_model import SegNet
 from segnet_dataset import create_dataloaders
 from segnet_utils import load_checkpoint, save_predictions_as_imgs
 
+# Define the dataset path in your local machine
+DATASET_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_dataset'
 
-import os
-
-# Define the dataset path in Google Drive
-DATASET_PATH = '/content/drive/MyDrive/segnet_dataset'
-
-# Update paths to your dataset in Google Drive
-TEST_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_test')
-TEST_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_test')
-TEST_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_test')
+# Update paths to your dataset in your local directory
+TEST_IMG_DIR = os.path.join(DATASET_PATH, 'Images\segnet_test')
+TEST_MASK_DIR = os.path.join(DATASET_PATH, 'Masks\segnet_test')
+TEST_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels\segnet_test')
 LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
 
 # Path to load checkpoints and save evaluation results
-CHECKPOINT_FILE = '/content/drive/MyDrive/segnet_model_checkpoint.pth.tar'
-OUTPUT_DIR = '/content/drive/MyDrive/segnet_test_results'
-
+CHECKPOINT_FILE = r'C:\Inmind\PROJECT\SegNet\segnet_model_checkpoint.pth.tar'
+OUTPUT_DIR = r'C:\Inmind\PROJECT\SegNet\segnet_test_results'
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate SegNet on Testing Dataset")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for evaluation")
     parser.add_argument("--image_height", type=int, default=720, help="Height of input images")
     parser.add_argument("--image_width", type=int, default=1280, help="Width of input images")
-    parser.add_argument("--test_img_dir", type=str, required=True, help="Directory with testing images")
-    parser.add_argument("--test_mask_dir", type=str, required=True, help="Directory with testing masks")
-    parser.add_argument("--test_label_dir", type=str, required=True, help="Directory with testing labels")
-    parser.add_argument("--label_map_file", type=str, required=True, help="Path to the label map JSON file")
-    parser.add_argument("--checkpoint_file", type=str, default="checkpoint.pth.tar", help="Path to the model checkpoint")
-    parser.add_argument("--output_dir", type=str, required=True, help="Directory to save predictions and metrics")
-    parser.add_argument("--device", type=str, default="cuda", help="Device to use for evaluation (cuda or cpu)")
+    parser.add_argument("--test_img_dir", type=str, default=TEST_IMG_DIR, help="Directory with testing images")
+    parser.add_argument("--test_mask_dir", type=str, default=TEST_MASK_DIR, help="Directory with testing masks")
+    parser.add_argument("--test_label_dir", type=str, default=TEST_LABEL_DIR, help="Directory with testing labels")
+    parser.add_argument("--label_map_file", type=str, default=LABEL_MAP_FILE, help="Path to the label map JSON file")
+    parser.add_argument("--checkpoint_file", type=str, default=CHECKPOINT_FILE, help="Path to the model checkpoint")
+    parser.add_argument("--output_dir", type=str, default=OUTPUT_DIR, help="Directory to save predictions and metrics")
+    parser.add_argument("--device", type=str, default="cpu", help="Device to use for evaluation (cuda or cpu)")
     return parser.parse_args()
 
 def evaluate(loader, model, device):
