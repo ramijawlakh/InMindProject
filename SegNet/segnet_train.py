@@ -10,11 +10,11 @@ import os
 DATASET_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_dataset'
 
 # Update paths to your dataset in your local directory
-TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train')
-TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train')
+TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train/resized')
+TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train/resized')
 TRAIN_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_train')
-VAL_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_val')
-VAL_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_val')
+VAL_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_val/resized')
+VAL_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_val/resized')
 VAL_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_val')
 LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
 
