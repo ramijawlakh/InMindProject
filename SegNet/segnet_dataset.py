@@ -66,18 +66,26 @@ class SegNetDataset(Dataset):
             label_indices[mask == rgba_tuple] = class_idx
 
         if self.transform:
-            augmented = self.transform(image=image, mask=mask)
+            # Apply transform to both image and label_indices
+            augmented = self.transform(image=image, mask=label_indices)
             image = augmented['image']
-            mask = augmented['mask']
+            label_indices = augmented['mask']
 
             print(f"Transformed image shape: {image.shape}")
-            print(f"Transformed mask shape: {mask.shape}")
+            print(f"Transformed mask shape: {label_indices.shape}")
 
-        return image, mask, label_indices
+        # Convert label_indices to a PyTorch tensor with the correct dtype
+        label_indices = torch.tensor(label_indices, dtype=torch.long)
+
+        # Ensure the label is a 2D tensor by removing any extra dimensions
+        if label_indices.dim() == 3:
+            label_indices = label_indices.squeeze(0)  # Remove any singleton dimensions
+
+        return image, label_indices
 
 def get_train_transform():
     return A.Compose([
-        A.Resize(height=720, width=1280),  # Consistent resize to 720x1280
+        A.Resize(height=512, width=512),  # Resize to 512x512
         A.HorizontalFlip(p=0.5),
         A.RandomRotate90(p=0.5),
         A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
@@ -89,7 +97,7 @@ def get_train_transform():
 
 def get_val_transform():
     return A.Compose([
-        A.Resize(height=720, width=1280),  # Consistent resize to 720x1280
+        A.Resize(height=512, width=512),  # Resize to 512x512
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         ToTensorV2()
     ])
