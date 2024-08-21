@@ -10,13 +10,23 @@ import os
 DATASET_PATH = r'C:\Inmind\PROJECT\SegNet\segnet_dataset'
 
 # Update paths to your dataset in your local directory
-TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train/resized')
-TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train/resized')
+#TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train/resized')
+#TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train/resized')
+#TRAIN_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_train')
+#VAL_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_val/resized')
+#VAL_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_val/resized')
+#VAL_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_val')
+#LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
+
+TRAIN_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_train')
+TRAIN_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_train')
 TRAIN_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_train')
-VAL_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_val/resized')
-VAL_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_val/resized')
+VAL_IMG_DIR = os.path.join(DATASET_PATH, 'Images/segnet_val')
+VAL_MASK_DIR = os.path.join(DATASET_PATH, 'Masks/segnet_val')
 VAL_LABEL_DIR = os.path.join(DATASET_PATH, 'Labels/segnet_val')
 LABEL_MAP_FILE = os.path.join(DATASET_PATH, 'label_map.json')
+
+
 
 # Path to save checkpoints and TensorBoard logs
 CHECKPOINT_FILE = r'C:\Inmind\PROJECT\SegNet\segnet_model_checkpoint.pth.tar'
@@ -57,20 +67,24 @@ def parse_args():
 def train_fn(loader, model, optimizer, loss_fn, device):
     model.train()
     loop = tqdm(loader, leave=True)
-    for batch_idx, (data, targets, labels) in enumerate(loop):
+
+    for batch_idx, (data, labels) in enumerate(loop):
         data = data.to(device)
         labels = labels.to(device)
 
-        # forward
+        # Ensure labels are [batch_size, height, width]
+        print(f"Data shape: {data.shape}, Labels shape: {labels.shape}")
+        
+        # Forward pass
         predictions = model(data)
         loss = loss_fn(predictions, labels)
 
-        # backward
+        # Backward pass and optimization
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # update tqdm loop
+        # Update tqdm loop
         loop.set_postfix(loss=loss.item())
 
 def main():
