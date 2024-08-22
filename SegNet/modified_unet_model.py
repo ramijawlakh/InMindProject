@@ -17,7 +17,6 @@ class DoubleConv(nn.Module):
         self.residual = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
 
     def forward(self, x):
-        print(f"Input size: {x.size()}")
         return self.conv(x) + self.residual(x)
 
 
@@ -49,23 +48,33 @@ class UNET(nn.Module):
         skip_connections = []
         for down in self.downs:
             x = down(x)
-            print(f"After downsampling block: {x.size()}")
             skip_connections.append(x)
             x = self.pool(x)
 
         x = self.bottleneck(x)
         skip_connections = skip_connections[::-1]
 
+        deep_outputs = []
+
         for idx in range(0, len(self.ups), 2):
             x = self.ups[idx](x)
             skip_connection = skip_connections[idx // 2]
+
+            if x.size() != skip_connection.size():
+                x = F.interpolate(x, size=skip_connection.shape[2:], mode='bilinear', align_corners=False)
+            
             concat_skip = torch.cat((skip_connection, x), dim=1)
             x = self.ups[idx + 1](concat_skip)
-            print(f"After upsampling block: {x.size()}")
 
-        x = self.final_conv(x)
-        print(f"Final output size: {x.size()}")
-        return x
+            deep_outputs.append(x)
+
+        # Ensure all tensors in deep_outputs have the same size before summing
+        min_height = min([x.size(2) for x in deep_outputs])
+        min_width = min([x.size(3) for x in deep_outputs])
+        deep_outputs = [F.interpolate(x, size=(min_height, min_width), mode='bilinear', align_corners=False) for x in deep_outputs]
+
+        output = sum(deep_outputs) / len(deep_outputs)
+        return self.final_conv(output)
 
 
 def test():
