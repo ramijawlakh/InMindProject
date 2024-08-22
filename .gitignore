@@ -130,7 +130,7 @@ cython_debug/
 /SegNet/segmentation_labels
 /SegNet/segmentation_masks
 /SegNet/segnet_dataset
-/YoloResults - second train
+/YoloResults - second train and test
 /YoloResults-first train and eval
 /labeled_images
 
