@@ -122,12 +122,17 @@ cython_debug/
 
 
 # Folders to ignore
-yolo labels/
-raw data/
-labeled images/
-dataset/
-SegNet/segmentation_images/
-SegNet/segmentation_labels/
-SegNet/segmentation_masks/
-SegNet/segnet_dataset/
+/yolo labels
+/raw data
+/labeled images
+/dataset
+/SegNet/segmentation_images
+/SegNet/segmentation_labels
+/SegNet/segmentation_masks
+/SegNet/segnet_dataset
+/YoloResults - second train
+/YoloResults-first train and eval
+/labeled_images
+
+>>>>>>> 79a5f1f (save yolo second training and testing results)
 
