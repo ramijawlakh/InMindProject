@@ -17,7 +17,7 @@ class DoubleConv(nn.Module):
         self.residual = nn.Conv2d(in_channels, out_channels, 1, bias=False) if in_channels != out_channels else nn.Identity()
 
     def forward(self, x):
-    print(f"Input size: {x.size()}")
+        print(f"Input size: {x.size()}")
         return self.conv(x) + self.residual(x)
 
 class UNET(nn.Module):
@@ -52,12 +52,12 @@ class UNET(nn.Module):
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
 
     def forward(self, x):
-    print(f"Input size: {x.size()}")
+        print(f"Input size: {x.size()}")
         skip_connections = []
 
         for down in self.downs:
             x = down(x)
-    print(f"After downsampling block: {x.size()}")
+        print(f"After downsampling block: {x.size()}")
             skip_connections.append(x)
             x = self.pool(x)
 
