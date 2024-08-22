@@ -44,43 +44,37 @@ class UNET(nn.Module):
         self.bottleneck = DoubleConv(features[-1], features[-1] * 2)
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
 
-    def forward(self, x):
-        skip_connections = []
-        for down in self.downs:
-            x = down(x)
-            skip_connections.append(x)
-            x = self.pool(x)
+        def forward(self, x):
+            skip_connections = []
+            for down in self.downs:
+                x = down(x)
+                skip_connections.append(x)
+                x = self.pool(x)
 
-        x = self.bottleneck(x)
-        skip_connections = skip_connections[::-1]
+            x = self.bottleneck(x)
+            skip_connections = skip_connections[::-1]
 
-        deep_outputs = []
+            deep_outputs = []
 
-        for idx in range(0, len(self.ups), 2):
-            x = self.ups[idx](x)
-            skip_connection = skip_connections[idx // 2]
+            for idx in range(0, len(self.ups), 2):
+                x = self.ups[idx](x)  # ConvTranspose2d upsampling
+                skip_connection = skip_connections[idx // 2]
 
-            if x.size() != skip_connection.size():
-                x = F.interpolate(x, size=skip_connection.shape[2:], mode='bilinear', align_corners=False)
-            
-            concat_skip = torch.cat((skip_connection, x), dim=1)
-            x = self.ups[idx + 1](concat_skip)
+                if x.size() != skip_connection.size():
+                    x = F.interpolate(x, size=skip_connection.shape[2:], mode='bilinear', align_corners=False)
 
-            # Ensure all deep_outputs have the same channel size before summing
-            if deep_outputs:
-                if deep_outputs[-1].size(1) != x.size(1):
-                    x = F.interpolate(x, size=(x.size(2), x.size(3)), mode='bilinear', align_corners=False)
-                    x = F.conv2d(x, weight=torch.ones_like(deep_outputs[-1][:, :x.size(1), :, :]), padding=0)
-            
-            deep_outputs.append(x)
+                concat_skip = torch.cat((skip_connection, x), dim=1)
+                x = self.ups[idx + 1](concat_skip)  # DoubleConv
 
-        # Ensure all tensors in deep_outputs have the same size before summing
-        min_height = min([x.size(2) for x in deep_outputs])
-        min_width = min([x.size(3) for x in deep_outputs])
-        deep_outputs = [F.interpolate(x, size=(min_height, min_width), mode='bilinear', align_corners=False) for x in deep_outputs]
+                deep_outputs.append(x)
 
-        output = sum(deep_outputs) / len(deep_outputs)
-        return self.final_conv(output)
+            # Ensure all tensors in deep_outputs have the same size before summing
+            min_height = min([x.size(2) for x in deep_outputs])
+            min_width = min([x.size(3) for x in deep_outputs])
+            deep_outputs = [F.interpolate(x, size=(min_height, min_width), mode='bilinear', align_corners=False) for x in deep_outputs]
+
+            output = sum(deep_outputs) / len(deep_outputs)
+            return self.final_conv(output)
 
 
 def test():
