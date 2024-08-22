@@ -29,13 +29,13 @@ def train_fn(loader, model, optimizer, loss_fn, scaler, writer, epoch):
 
     loss = loss_fn(predictions, targets)
         
-        optimizer.zero_grad()
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+    optimizer.zero_grad()
+    scaler.scale(loss).backward()
+    scaler.step(optimizer)
+    scaler.update()
         
-        loop.set_postfix(loss=loss.item())
-        writer.add_scalar("Loss/train", loss.item(), epoch * len(loader) + batch_idx)
+    loop.set_postfix(loss=loss.item())
+    writer.add_scalar("Loss/train", loss.item(), epoch * len(loader) + batch_idx)
 
 def main(args):
     writer = SummaryWriter(log_dir=args.log_dir)
