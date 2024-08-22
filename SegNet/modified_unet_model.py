@@ -66,6 +66,12 @@ class UNET(nn.Module):
             concat_skip = torch.cat((skip_connection, x), dim=1)
             x = self.ups[idx + 1](concat_skip)
 
+            # Ensure all deep_outputs have the same channel size before summing
+            if deep_outputs:
+                if deep_outputs[-1].size(1) != x.size(1):
+                    x = F.interpolate(x, size=(x.size(2), x.size(3)), mode='bilinear', align_corners=False)
+                    x = F.conv2d(x, weight=torch.ones_like(deep_outputs[-1][:, :x.size(1), :, :]), padding=0)
+            
             deep_outputs.append(x)
 
         # Ensure all tensors in deep_outputs have the same size before summing
